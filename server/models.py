@@ -1,5 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
+from sqlalchemy_serializer import SerializerMixin
 
 metadata = MetaData(naming_convention={
     "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
@@ -7,7 +8,7 @@ metadata = MetaData(naming_convention={
 
 db = SQLAlchemy(metadata=metadata)
 
-class Game(db.Model):
+class Game(db.Model, SerializerMixin):
     __tablename__ = 'games'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -19,6 +20,8 @@ class Game(db.Model):
     updated_at = db.Column(db.DateTime, onupdate=db.func.now())
 
     reviews = db.relationship('Review', backref='game')
+
+    serialize_rules = ('-reviews.game',)
 
     def __repr__(self):
         return f'<Game {self.title} for {self.platform}>'
@@ -35,6 +38,8 @@ class Review(db.Model):
     game_id = db.Column(db.Integer, db.ForeignKey('games.id'))
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
+    serialize_rules = ('-game.reviews', '-user.reviews',)
+
     def __repr__(self):
         return f'<Review ({self.id}) of {self.game}: {self.score}/10>'
 
@@ -48,3 +53,5 @@ class User(db.Model):
     updated_at = db.Column(db.DateTime, onupdate=db.func.now())
 
     reviews = db.relationship('Review', backref='user')
+
+    serialize_rules = ('-reviews.user',)
